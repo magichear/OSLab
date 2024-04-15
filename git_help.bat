@@ -1,0 +1,1 @@
+start  https://magichear.github.io/study/docs/shortcut/#git
