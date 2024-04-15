@@ -1,4 +1,11 @@
 # OSLab
 
-This File contain my OS lab codes and some other files
+本仓库存储了本人在操作系统课程中的实验资源，
+内含：
 
+- 全部实验代码
+  - 包括头文件备份
+- 重要内核代码备份
+  - 如`Lab2`中我修改过的`sys.c`等
+- 自动化处理脚本
+  - 受路径限制，更改路径需要手动修改脚本
