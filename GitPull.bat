@@ -1,5 +1,7 @@
 @echo off
 echo Starting pull
 git pull
-echo Task completed
+echo -----------------
+echo -Task completed--
+echo -----------------
 pause
