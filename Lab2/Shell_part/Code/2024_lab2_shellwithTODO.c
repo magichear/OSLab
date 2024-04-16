@@ -97,7 +97,7 @@ int exec_builtin(int argc, char**argv, int *fd) {
     } 
     else if (strcmp(argv[0], "kill") == 0) {
         // 检查参数个数
-        if (argc != 2) {
+        if ((argc != 2) || (argc != 3)) {
             printf("kill: wrong number of arguments\n");
             return -1;
         }
@@ -110,10 +110,19 @@ int exec_builtin(int argc, char**argv, int *fd) {
         }
 
         // 杀死进程
-        if (kill(pid, SIGTERM) != 0) {
-            perror("kill");
-            return -1;
+        if (argc == 2) {
+            if (kill(pid, SIGTERM) != 0) {
+                perror("kill");
+                return -1;
+            }        
         }
+        else {
+            if (kill(pid, atoi(argv[2])) != 0){
+                perror("kill");
+                return -1;
+            }
+        }
+
         /*
         SIGTERM：结束进程的默认信号。
         当一个进程收到`SIGTERM`信号时，它会知道自己即将被结束，
@@ -225,8 +234,9 @@ int execute(int argc, char** argv) {
     dup2(fd[READ_END], STDIN_FILENO);
     dup2(fd[WRITE_END], STDOUT_FILENO);
     /* TODO:运行命令与结束 */
-    execvp(argv[0], argv);
+    execvp(argv[0], argv);      // 自动从环境变量中找程序
     perror("execvp error");
+    
     return 0;
 }
 

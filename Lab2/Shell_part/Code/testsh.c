@@ -332,7 +332,8 @@ t7(int *ok)
   strcpy(cmd+strlen(cmd), file);
   strcpy(cmd+strlen(cmd), "\n");
 
-  if(one(cmd, "", 1 , 1) == 0){
+  // TODO:   增加了“data”以作为测试预期结果
+  if(one(cmd, data, 1 , 1) == 0){
     printf("FAIL\n");
     *ok = 0;
   } else {
@@ -375,7 +376,8 @@ t8(int *ok)
   strcpy(cmd+strlen(cmd), file);
   strcpy(cmd+strlen(cmd), "\n");
 
-  if(one(cmd, "", 1 , 1) == 0){
+  // TODO: 添加了预期结果（即两组数据的拼接）
+  if(one(cmd, strcat(data, append_data), 1 , 1) == 0){
     printf("FAIL\n");
     *ok = 0;
   } else {
