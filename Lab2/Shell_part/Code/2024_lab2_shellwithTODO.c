@@ -162,7 +162,7 @@ int process_redirect(int argc, char** argv, int *fd) {
         int tfd;
         if(strcmp(argv[i], ">") == 0) {
             //TODO: 打开输出文件从头写入
-            tfd = open(argv[i+1], O_CREAT | O_WRONLY | O_TRUNC);
+            tfd = open(argv[i+1], O_CREAT | O_WRONLY | O_TRUNC, 0666);
             /*
             文件路径， 文件不存在则创建 | 只写 | 从头写
             最后的mode参数  0664 所有者有读写权限，其余人只读
@@ -177,7 +177,7 @@ int process_redirect(int argc, char** argv, int *fd) {
             i += 2;
         } else if(strcmp(argv[i], ">>") == 0) {
             //TODO: 打开输出文件追加写入
-            tfd = open(argv[i+1], O_CREAT | O_WRONLY | O_APPEND);
+            tfd = open(argv[i+1], O_CREAT | O_WRONLY | O_APPEND, 0666);
             /*
             文件路径， 文件不存在则创建 | 只写 | 从末尾追加
             */
@@ -237,7 +237,7 @@ int execute(int argc, char** argv) {
     execvp(argv[0], argv);      // 自动从环境变量中找程序
     perror("execvp error");
     
-    return 0;
+    return -1;
 }
 
 int main() {
