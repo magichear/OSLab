@@ -97,7 +97,7 @@ int exec_builtin(int argc, char**argv, int *fd) {
     } 
     else if (strcmp(argv[0], "kill") == 0) {
         // 检查参数个数
-        if ((argc != 2) || (argc != 3)) {
+        if ((argc != 2) && (argc != 3)) {
             printf("kill: wrong number of arguments\n");
             return -1;
         }
@@ -122,6 +122,7 @@ int exec_builtin(int argc, char**argv, int *fd) {
                 return -1;
             }
         }
+        return 0;
 
         /*
         SIGTERM：结束进程的默认信号。
@@ -162,9 +163,9 @@ int process_redirect(int argc, char** argv, int *fd) {
         int tfd;
         if(strcmp(argv[i], ">") == 0) {
             //TODO: 打开输出文件从头写入
-            tfd = open(argv[i+1], O_CREAT | O_WRONLY | O_TRUNC, 0666);
+            tfd = open(argv[i+1], O_CREAT | O_WRONLY | O_TRUNC, 0666);    // 0666非常重要！
             /*
-            文件路径， 文件不存在则创建 | 只写 | 从头写
+            文件路径， 文件不存在则创建 | 只写 | 从头写 | 所有权
             最后的mode参数  0664 所有者有读写权限，其余人只读
                            0666 所有人都有读写权限
             */
@@ -179,7 +180,7 @@ int process_redirect(int argc, char** argv, int *fd) {
             //TODO: 打开输出文件追加写入
             tfd = open(argv[i+1], O_CREAT | O_WRONLY | O_APPEND, 0666);
             /*
-            文件路径， 文件不存在则创建 | 只写 | 从末尾追加
+            文件路径， 文件不存在则创建 | 只写 | 从末尾追加 | 所有权
             */
             if(tfd < 0) {
                 printf("open '%s' error: %s\n", argv[i+1], strerror(errno));
