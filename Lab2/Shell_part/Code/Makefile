@@ -15,7 +15,7 @@ clean:
 #TODO: 参照 clean ，增加自动化测试的规则，注意自动化测试的规则是可以有依赖的
 
 test: testsh simple_shell
-	./testsh ./simple_shell
+	./testsh simple_shell
 
 #目标：依赖项
 #	生成命令
