@@ -1,0 +1,6 @@
+@echo off
+echo Starting auto commit and push to git
+git add .
+git commit -m "Normal update"
+echo Task completed
+pause
