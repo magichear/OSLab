@@ -2471,13 +2471,15 @@ struct my_processinfo {
 };
 */
 
-SYSCALL_DEFINE1(my_processinfo_top, struct my_processinfo __user *, info){
+SYSCALL_DEFINE2(my_processinfo_top, struct my_processinfo __user *, info, int , th){
 	// Init
 	struct task_struct* task;
 	struct my_processinfo InSyscall_info[20];
 	
 	int process_cnt = 0;	// count the process number
 	int i = 0;
+	i = th;
+	i = 0;
 	// Copyright
 	printk("[Syscall] my_processinfo_top\n");
 	printk("[ StuID ] PB22151796\n\n"); 	

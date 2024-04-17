@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			// System call
-			syscall(332, &info);
+			syscall(332, &info, 0);
 			
 			// Calculate & Sort CPU occupancy
 			cs(info,output_number,rate);

@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 	int fork_pid = 0;
 	int refresh_times = 0;
 	double rate[20];		// CPU rate
-	struct my_processinfo info[20];
+	struct my_processinfo info[1000];
 	
 	// Set seconds
 	if ((seconds = Check(argc, argv)) <= 0) {
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			// System call
-			syscall(332, &info);
+			syscall(332, &info, 0);
 			
 			// Calculate & Sort CPU occupancy
 			cs(info,output_number,rate);
