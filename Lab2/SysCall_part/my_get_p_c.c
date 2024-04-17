@@ -8,7 +8,7 @@
 
 /*Pre-declare func name*/
 int Check(int argc, char *argv[]);
-void print_info(int symbol_table[], double rate[], struct my_processinfo info[], int refresh_times);
+void print_info(int symbol_table[], double rate[], struct my_processinfo info[], int refresh_times, int process_cnt);
 void cs(struct my_processinfo info[], int number[], double rate[]);
 
 /*main*/
@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 	int output_number[20];		// Symbol table
 	int fork_pid = 0;
 	int refresh_times = 0;
+	int process_cnt = 0;
 	double rate[20];		// CPU rate
 	struct my_processinfo info[1000];
 	
@@ -42,13 +43,14 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			// System call
-			syscall(332, &info, 0);
+			syscall(333, &info, 0);
+			syscall(332, &process_cnt);
 			
 			// Calculate & Sort CPU occupancy
 			cs(info,output_number,rate);
 			
 			// Print process infomation
-			print_info(output_number,rate,info,refresh_times);
+			print_info(output_number,rate,info,refresh_times, process_cnt);
 				
 			// Wait for the time to end
 			wait(NULL);				
@@ -113,10 +115,10 @@ void cs(struct my_processinfo info[], int number[], double rate[]) {
 	}
 }
 
-void print_info(int symbol_table[], double rate[], struct my_processinfo info[], int refresh_times){
-	printf("PID COMM             ISRUNNING %%CPU   TIME            The %d th refresh\n",refresh_times);
+void print_info(int symbol_table[], double rate[], struct my_processinfo info[], int refresh_times, int process_cnt){
+	printf("PID COMM             ISRUNNING %%CPU   TIME            %d process | %dth refresh\n",process_cnt, refresh_times);
 	for(int i = 0; i < 20; i++){
-		printf("%-3d %-16s %-9ld %-6.2f %-16.2f   --[%d]\n",info[symbol_table[i]].pid, info[symbol_table[i]].comm, info[symbol_table[i]].state, rate[symbol_table[i]],  (double)((info[symbol_table[i]].process_runtime)/1000000000.0),i);
+		printf("%-3d %-16s %-9ld %-6.2f %-16.2f   --[%d]\n",info[symbol_table[i]].pid, info[symbol_table[i]].comm, info[symbol_table[i]].state, rate[symbol_table[i]],  (double)((info[symbol_table[i]].process_runtime)/1000000000.0),i+1);
 	}
 }
 

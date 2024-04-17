@@ -340,8 +340,8 @@
 331	common	pkey_free		sys_pkey_free
 
 # My system calls below
-
-332     common  my_processinfo_top      sys_my_processinfo_top
+332     common  ps_counter              sys_ps_counter
+333     common  my_processinfo_top      sys_my_processinfo_top
 
 #
 # x32-specific system call numbers start at 512 to avoid cache impact

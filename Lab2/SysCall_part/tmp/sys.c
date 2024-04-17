@@ -2458,6 +2458,16 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
 #endif /* CONFIG_COMPAT */
 
 /*My syscalls define*/
+SYSCALL_DEFINE1(ps_counter, int __user *, num){
+	struct task_struct* task;
+	int counter = 0;
+	for_each_process(task){
+		counter++;
+	}
+	if(copy_to_user(num, &counter, sizeof(int)))
+		return 1;
+	return 0;
+}
 /*
 struct my_processinfo {
 	pid_t pid;			//line1608
@@ -2474,12 +2484,11 @@ struct my_processinfo {
 SYSCALL_DEFINE2(my_processinfo_top, struct my_processinfo __user *, info, int , th){
 	// Init
 	struct task_struct* task;
-	struct my_processinfo InSyscall_info[20];
+	struct my_processinfo InSyscall_info[30];
 	
 	int process_cnt = 0;	// count the process number
+	int loop_cnt = 0;
 	int i = 0;
-	i = th;
-	i = 0;
 	// Copyright
 	printk("[Syscall] my_processinfo_top\n");
 	printk("[ StuID ] PB22151796\n\n"); 	
@@ -2487,7 +2496,11 @@ SYSCALL_DEFINE2(my_processinfo_top, struct my_processinfo __user *, info, int , 
 	// Work start
 	for_each_process(task) {
 		// MAX process number
-		if (process_cnt >= 20){
+		if (loop_cnt < (30*th)){
+			loop_cnt++;
+			continue;
+		}
+		else if(process_cnt == 29) {
 			break;
 		}
 		// PID
@@ -2513,7 +2526,7 @@ SYSCALL_DEFINE2(my_processinfo_top, struct my_processinfo __user *, info, int , 
 	}
 	
 	// Copy to user
-	if (copy_to_user(info, InSyscall_info, 20 * sizeof(struct my_processinfo)))
+	if (copy_to_user(info, InSyscall_info, 30 * sizeof(struct my_processinfo)))
 		return 1;
 	
 	// END
