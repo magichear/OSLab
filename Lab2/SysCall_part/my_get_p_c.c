@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 		refresh_times++;
 	}
 	// 释放共享内存
-	if munmap(info, SIZE * sizeof(struct my_processinfo)){
+	if (munmap(info, SIZE * sizeof(struct my_processinfo)){
     	perror("munmap");
     	exit(1);
 	}
@@ -126,7 +126,7 @@ int get_processes_data(struct my_processinfo *info) {
 	int *child_type = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 	int type_return = 0;
 
-	if (shared_var == MAP_FAILED) {
+	if (child_type == MAP_FAILED) {
     	perror("mmap");
     	exit(1);
 	}
