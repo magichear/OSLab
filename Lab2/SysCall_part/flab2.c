@@ -7,7 +7,7 @@
 //#include<sys/time.h>
 #include "/home/zxy/oslab/myconfig/oslab2.h"
 
-#define SIZE 420
+#define SIZE 360
 #define EACH_SIZE 30
 #define PRINT_SIZE 20
 
@@ -112,8 +112,6 @@ int Check(int argc, char *argv[]){
 int get_processes_data(struct my_processinfo *info, int *ps_cnt) {
 	// PID init
 	int pidA = -1;
-	int pidB = -1;
-	int pidC = -1;
 	/* Loop assist */
 	int process_cnt = 0;            // 进程总数
 	int loop_cnt = 0;		// 循环读取进程的次数
@@ -139,11 +137,11 @@ int get_processes_data(struct my_processinfo *info, int *ps_cnt) {
     }
     total_cnt = process_cnt/EACH_SIZE + 1;		// 计算需要循环的次数
     while(loop_cnt < total_cnt) {
-        // 子进程1
+        // 子进程
         pidA = fork();
         if (pidA < 0){
             printf("[Fatal!] Fork error!\n");
-			*child_type = 1;
+	    *child_type = 1;
             exit(1);
         }
         else if (pidA == 0) {
@@ -153,72 +151,13 @@ int get_processes_data(struct my_processinfo *info, int *ps_cnt) {
             // 系统调用
             if(syscall(333, child_infoA, loop_cnt)){
                 printf("[Fatal!] Syscall333 error!\n");
-				*child_type = 1;
+		*child_type = 1;
             }
             // 退出
             exit(255);
         }
         loop_cnt++;
-        if(loop_cnt == total_cnt) {
-            waitpid(pidA, NULL, 0);	      // 进入这里说明已经不需要开进程了
-            break;      		      // 等待前面的进程结束即可退出
-        }
-        // 子进程2
-        pidB = fork();
-        if (pidB < 0){
-            printf("[Fatal!] Fork error!\n");
-			*child_type = 1;
-            exit(1);
-        }
-        else if (pidB == 0) {
-            // 设置起始地址（内存共享）
-            struct my_processinfo *child_infoB = info + loop_cnt * EACH_SIZE;
-
-            // 系统调用
-            if(syscall(333, child_infoB, loop_cnt)) {
-                printf("[Fatal!] Syscall333 error!\n");
-				*child_type = 1;
-            }
-            // 退出
-            exit(255);
-        }
-        loop_cnt++;
-        if(loop_cnt == total_cnt) {
-            waitpid(pidB, NULL, 0);		// 只需等待进行最慢的那个即可
-            break;
-        }
-        // 子进程3
-        pidC = fork();
-        if (pidC < 0){
-            printf("[Fatal!] Fork error!\n");
-			*child_type = 1;
-            exit(1);
-        }
-        else if (pidC == 0) {
-            // 设置起始地址（内存共享）			
-            struct my_processinfo *child_infoC = info + loop_cnt * EACH_SIZE;
-
-            // 系统调用
-            if (syscall(333, child_infoC, loop_cnt)){
-				printf("[Fatal!] Syscall333 error!\n");
-				*child_type = 1;
-			}
-            // 退出
-            exit(255);
-        }
-
-        loop_cnt++;
-        if(loop_cnt == total_cnt) {
-            waitpid(pidC, NULL, 0);
-            break;
-        }
-        // 进行到此说明还没有结束，继续循环，此时需要等待进程运行结束
-        // （防止进程开太多）
-        waitpid(pidC, NULL, 0);		// 进程C执行最慢
-		if (*child_type = -1) {
-			printf("[Fatal!] Syscall333 error!\n");
-			break;
-		}
+        waitpid(pidA, NULL, 0);
     }	// while END
 	type_return = *child_type;
 	if (munmap(child_type, sizeof(int)) == -1) {

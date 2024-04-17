@@ -2461,6 +2461,11 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
 SYSCALL_DEFINE1(ps_counter, int __user *, num){
 	struct task_struct* task;
 	int counter = 0;
+	
+	// Copyright
+	printk("[Syscall] my_processinfo_top\n");
+	printk("[ StuID ] PB22151796\n"); 	
+		
 	for_each_process(task){
 		counter++;
 	}
@@ -2489,10 +2494,7 @@ SYSCALL_DEFINE2(my_processinfo_top, struct my_processinfo __user *, info, int , 
 	int process_cnt = 0;	// count the process number
 	int loop_cnt = 0;
 	int i = 0;
-	// Copyright
-	printk("[Syscall] my_processinfo_top\n");
-	printk("[ StuID ] PB22151796\n\n"); 	
-	
+
 	// Work start
 	for_each_process(task) {
 		// MAX process number
@@ -2523,6 +2525,11 @@ SYSCALL_DEFINE2(my_processinfo_top, struct my_processinfo __user *, info, int , 
 		InSyscall_info[process_cnt].sorted = 0;
 		
 		process_cnt++;
+	}
+	if (process_cnt < 29) {		// Set but could ignore
+		for(loop_cnt = 1 ; loop_cnt <= (30 - process_cnt) ; loop_cnt++){
+			InSyscall_info[process_cnt + loop_cnt].pid = -1;
+		}
 	}
 	
 	// Copy to user

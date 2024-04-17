@@ -4,3 +4,4 @@ cp -f ~/oslab/linux-4.9.263/include/linux/syscalls.h ~/oslab/OSLab/Lab2/SysCall_
 cp -f ~/oslab/linux-4.9.263/kernel/sys.c ~/oslab/OSLab/Lab2/SysCall_part/tmp/
 cp -rf ~/oslab/myconfig ~/oslab/OSLab/Lab2/SysCall_part/tmp/
 cp -f ~/oslab/OSLab/Lab2/SysCall_part/my_get_p_c.c ~/oslab/OSLab/Lab2/SysCall_part/tmp/
+cp -f ~/oslab/OSLab/Lab2/SysCall_part/flab2.c ~/oslab/OSLab/Lab2/SysCall_part/tmp/
