@@ -171,7 +171,7 @@ int process_redirect(int argc, char** argv, int *fd) {
             */
             if(tfd < 0) {
                 printf("open '%s' error: %s\n", argv[i+1], strerror(errno));
-            } else {
+            } else {    // 打开成功
                 //TODO: 输出重定向
                 fd[WRITE_END] = tfd;
             }
