@@ -237,6 +237,7 @@ static void *coalesce(void *bp)
         // 修改自身
         PUT(HDRP(bp), PACK_ALLOC(GET(HDRP(bp)), 0));
         PUT(FTRP(bp), PACK_ALLOC(GET(HDRP(bp)), 0));
+        add_to_free_list(bp);   // 将新的空闲块加入空闲链表
     }
     else if (prev_alloc && !next_alloc) /*前块已分配，后块空闲*/
     {
@@ -245,12 +246,12 @@ static void *coalesce(void *bp)
         PUT(HDRP(bp), PACK(size, 1, 0));           // 向头部和尾部添加大小、前邻居块分配、自身空闲信息
         PUT(FTRP(bp), PACK(size, 1, 0));           // 先修改头部，size改变了才方便修改尾部
         // 再往后的块无需修改
+        add_to_free_list(bp);   // 将新的空闲块加入空闲链表
     }
     else if (!prev_alloc && next_alloc) /*前块空闲，后块已分配*/
     {
-        size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         bp = PREV_BLKP(bp);        // 移动指针到前块位置
-        delete_from_free_list(bp);
+        size += GET_SIZE(HDRP(bp));
         PUT(HDRP(bp), PACK(size, GET_PREV_ALLOC(HDRP(bp)), 0));
         PUT(FTRP(bp), PACK(size, GET_PREV_ALLOC(HDRP(bp)), 0));
         // 修改后块
@@ -259,14 +260,12 @@ static void *coalesce(void *bp)
     else /*前后都是空闲块*/
     {
         size = size + GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(HDRP(NEXT_BLKP(bp)));
-        delete_from_free_list(PREV_BLKP(bp));
         delete_from_free_list(NEXT_BLKP(bp));
         bp = PREV_BLKP(bp);     // 并非通过空闲块获取地址，所以先删除没有影响
         PUT(HDRP(bp), PACK(size, GET_PREV_ALLOC(HDRP(bp)), 0));
         PUT(FTRP(bp), PACK(size, GET_PREV_ALLOC(HDRP(bp)), 0)); 
         // 再往后的块无需修改
     }
-    add_to_free_list(bp);   // 将新的空闲块加入空闲链表
     return bp;
 }
 
@@ -328,22 +327,22 @@ static void place(void *bp, size_t asize)
     size_t total_size = GET_SIZE(HDRP(bp));      // 获取块大小
     
     if ((total_size - asize) > MIN_BLK_SIZE) {   // 剩余空间仍可作为空闲块
-        PUT(HDRP(bp), PACK(asize, GET_PREV_ALLOC(HDRP(bp)), 1));    // 设置分配块
-        delete_from_free_list(bp);               // 从空闲链表中删除   
-        bp = NEXT_BLKP(bp);                      // 移动指针到剩余部分(已经覆盖asize)
-        PUT(HDRP(bp), PACK(total_size-asize, 1, 0));
-        PUT(FTRP(bp), PACK(total_size-asize, 1, 0));
-        add_to_free_list(bp);
+        delete_from_free_list(bp);               // 从空闲链表中删除     
+        PUT(HDRP(bp), PACK(asize, GET_ALLOC(HDRP(PREV_BLKP(bp))), 1));    // 设置分配块
+        /* 修改空闲块 */
+        PUT(HDRP(NEXT_BLKP(bp)), PACK(total_size-asize, 1, 0));
+        PUT(FTRP(NEXT_BLKP(bp)), PACK(total_size-asize, 1, 0));
+        add_to_free_list(NEXT_BLKP(bp));
         /* 分配块只有块头，空闲块有块头和块尾 */
         /* 后面的块不需要改动 */
     } 
     else {                                      // 余额太小，应该全部分配
+        delete_from_free_list(bp);    
         PUT(HDRP(bp), PACK_ALLOC(GET(HDRP(bp)), 1));    // 修改为已分配
         PUT(HDRP(NEXT_BLKP(bp)), PACK_PREV_ALLOC(GET(HDRP(NEXT_BLKP(bp))), 1));     // 对下一个相邻块设置该块的分配状态
-        if (GET_ALLOC(NEXT_BLKP(bp)) == 0){      // 相邻块未分配
+        if (GET_ALLOC(HDRP(NEXT_BLKP(bp))) == 0){      // 相邻块未分配
             PUT(FTRP(NEXT_BLKP(bp)), PACK_PREV_ALLOC(GET(HDRP(NEXT_BLKP(bp))), 1));     // 对下一个相邻块设置该块的分配状态
         }
-        delete_from_free_list(bp);
     }
 }
 
