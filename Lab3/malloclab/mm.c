@@ -328,7 +328,7 @@ static void place(void *bp, size_t asize)
     
     if ((total_size - asize) > MIN_BLK_SIZE) {   // 剩余空间仍可作为空闲块
         delete_from_free_list(bp);               // 从空闲链表中删除     
-        PUT(HDRP(bp), PACK(asize, GET_ALLOC(HDRP(PREV_BLKP(bp))), 1));    // 设置分配块
+        PUT(HDRP(bp), PACK(asize, GET_PREV_ALLOC(HDRP(bp)), 1));    // 设置分配块
         /* 修改空闲块 */
         PUT(HDRP(NEXT_BLKP(bp)), PACK(total_size-asize, 1, 0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(total_size-asize, 1, 0));
