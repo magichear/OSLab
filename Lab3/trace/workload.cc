@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <iomanip>      // 修改输出小数点格式
 #include "mm.h"
 #include "memlib.h"
 #include "config.h"
@@ -19,6 +20,8 @@
 #define malloc mm_malloc
 #define free mm_free
 unsigned int workload_size[WORKLOAD_TYPE] = {12, 16, 24, 32, 48, 64, 96, 100, 128, 192, 256, 384 , 500, 512, 768 , 1024};
+
+long malloc_time_cnt;
 
 extern size_t user_malloc_size ;
 extern size_t heap_size ;
@@ -33,13 +36,20 @@ char* gen_random_string(int length)
 {
 	int flag, i;
 	char* string;
-	if ((string = (char*) malloc(length)) == NULL )
+    struct timeval curtime;
+    gettimeofday(&curtime, NULL);
+    long sec1 = curtime.tv_sec, usec1 = curtime.tv_usec;
+    if ((string = (char*) malloc(length)) == NULL )
 	{
 		std::cerr << "Malloc failed at genRandomString!" << std::endl;
 		return NULL ;
 	}
+    gettimeofday(&curtime, NULL);
+    long sec2 = curtime.tv_sec, usec2 = curtime.tv_usec;
 
-	for (i = 0; i < length - 1; i++)
+    malloc_time_cnt += (sec2-sec1)*1000 + (usec2-usec1)/1000;
+
+    for (i = 0; i < length - 1; i++)
 	{
 		flag = rand() % 3;
 		switch (flag)
@@ -131,13 +141,15 @@ void* workload_run(void *workload){
         workload_insert((struct workload_base*)workload);
         workload_swap((struct workload_base*)workload);
         workload_read((struct workload_base*)workload);
-        std::cout<<"before free: "<<get_utilization();
-        workload_delete((struct workload_base*)workload);
-        std::cout<<"; after free: "<<get_utilization()<<std::endl;
+        std::cout<< "\n------------------------------------\n" <<std::endl;
+        std::cout << "before free: " << std::fixed << std::setprecision(3) << get_utilization();    // 输出三位小数
+        workload_delete((struct workload_base *)workload);
+        std::cout << "; after free: " << std::fixed << std::setprecision(3) << get_utilization() << std::endl;
         gettimeofday(&cur_time, NULL);
         long sec2=cur_time.tv_sec,usec2=cur_time.tv_usec;
-        std::cout<<"time of loop "<< loop <<" : "<<(sec2-sec1)*1000 + (usec2-usec1)/1000 << "ms" << std::endl;        
+        std::cout<<"    time of loop "<< loop <<" : "<<(sec2-sec1)*1000 + (usec2-usec1)/1000 << "ms" << std::endl;        
     }
+    std::cout << "\n------------------------------------\nMalloc average use: "<<((double)malloc_time_cnt/(LOOP_NUM+1))<<" ms"<< std::endl;
     return NULL;
 }
 
@@ -165,6 +177,7 @@ int main(){
     }         
     pthread_t monitor_pid; 
     // pthread_create(&monitor_pid, NULL, monitor_run, NULL);
+    malloc_time_cnt = 0;
     workload_run(&workload);
     // pthread_cancel(monitor_pid);
     return 0;

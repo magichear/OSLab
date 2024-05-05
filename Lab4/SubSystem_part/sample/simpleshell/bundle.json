@@ -1,0 +1,31 @@
+{
+  "name": "@ohos/simpleshell",
+  "description": "A subSystem with simple shell",
+  "version": "3.1",
+  "license": "Apache License 2.0",
+  "publishAs": "code-segment",
+  "segment": {
+    "destPath": "sample/simpleshell"
+  },
+  "repoAddr": "https://gitee.com/openharmony/applications_app_samples.git",
+  "dirs": {},
+  "scripts": {},
+  "component": {
+    "name": "simpleshell",
+    "subsystem": "sample",
+    "syscap": [],
+    "features": [],
+    "adapted_system_type": ["mini", "small", "standard"],
+    "rom": "10KB",
+    "ram": "10KB",
+    "deps": {
+      "components": [],
+      "third_party": []
+    },
+    "build": {
+      "sub_component": ["//sample/simpleshell:simpleshell"],
+      "inner_kits": [],
+      "test": []
+    }
+  }
+}
