@@ -253,7 +253,7 @@ int main() {
             // 限制cur_cwd的作用域，节约资源（乐）
             char cur_cwd[MAX_BUF_SIZE];
             if (getcwd(cur_cwd, sizeof(cur_cwd)) != NULL) {
-                printf("shell:%s -> ", cur_cwd);
+                printf("[PB22151796]:%s -> ", cur_cwd);
             }
             else {
                 perror("getcwd error");
