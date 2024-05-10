@@ -1,0 +1,17 @@
+import("//build/ohos.gni")
+ohos_executable("simpleshell") {
+    sources = [
+        "src/simpleshell.c"
+    ]
+    include_dirs = [
+        "include"
+    ]
+    cflags = []
+    cflags_c = []
+    cflags_cc = []
+    ldflags = []
+    configs = []
+    deps = []
+    part_name = "simpleshell"
+    install_enable = true
+} 
