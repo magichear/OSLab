@@ -18,7 +18,7 @@ typedef struct {
 	uint32_t fats;                  // FAT表的数量
 	uint32_t dir_entries;           // 根目录项数量
 	uint32_t sectors;               // 文件系统总扇区数
-	uint32_t sec_per_fat;            // 每个FAT表所占扇区数
+	uint32_t sec_per_fat;           // 每个FAT表所占扇区数
 
     sector_t fat_sec;               // FAT表开始扇区
     sector_t root_sec;              // 根目录区域开始扇区
@@ -60,11 +60,15 @@ cluster_t read_fat_entry(cluster_t clus)
      *       表项在哪个扇区？在扇区中的偏移量是多少？表项的大小是多少？
      */
     // ================== Your code here =================
-    
-    
-    
+    sector_t sec = meta.fat_sec + clus / (meta.sector_size / 2); // 扇区号。
+    size_t off = (clus % (meta.sector_size / 2)) * 2; // 扇区内偏移量。
+    int ret = sector_read(sec, sector_buffer); // 表项的大小
+    if(ret < 0) {
+        return ret;
+    }
     // ===================================================
-    return CLUSTER_END; // TODO: 记得删除或者修改这一行
+    return *(cluster_t*)(sector_buffer + off); // TODO: 请返回正确的表项值。
+//    return CLUSTER_END; // TODO: 记得删除或者修改这一行
 }
 
 typedef struct {
@@ -146,9 +150,14 @@ int find_entry_internal(const char* path, DirEntrySlot* slot, const char** remai
          * Hint: 补全以下代码，实现对非根目录的路径的查找。提示，你要写一个 while 循环，依次搜索当前目录对应的簇里的目录项。
          */
         // ================== Your code here =================
-        
-        
-        
+/*
+        sector_t first_sec = cluster_first_sector(clus);
+        size_t nsec = meta.sec_per_clus;
+        state = find_entry_in_sectors(*remains, len, first_sec, nsec, slot);
+        if(state != FIND_EXIST) {
+            return state;
+        }
+*/        
         // ===================================================
 
         // 此时，slot 中存放了下一层的目录项
@@ -347,15 +356,15 @@ int fill_entries_in_sectors(sector_t first_sec, size_t nsec, fuse_fill_dir_t fil
          *       为降低难度，我们实现了大部分代码，你只需要修改和补全以下带 TODO 的几行。
          */
 
-        sector_t sec = _placeholder_(); // TODO: 请填写正确的扇区号
+        sector_t sec = first_sec + i; // TODO: 请填写正确的扇区号
         int ret = sector_read(sec, sector_buffer);
         if(ret < 0) {
             return -EIO;
         }
-        for(size_t off = 0; off < _placeholder_(); off += _placeholder_() ) { // TODO: 请补全循环条件（每个扇区多大？目录项多大？）
+        for(size_t off = 0; off < meta.sector_size; off += DIR_ENTRY_SIZE ) { // TODO: 请补全循环条件（每个扇区多大？目录项多大？）
             DIR_ENTRY* entry = (DIR_ENTRY*)(sector_buffer + off);
             if(de_is_valid(entry)) {
-                int ret = _placeholder_(); // TODO: 请调用 to_longname 函数，将 entry->DIR_Name 转换为长文件名，结果存放在 name 中。
+                int ret = to_longname(entry->DIR_Name, name, MAX_NAME_LEN); // TODO: 请调用 to_longname 函数，将 entry->DIR_Name 转换为长文件名，结果存放在 name 中。
                 if(ret < 0) {
                     return ret;
                 }
@@ -445,8 +454,8 @@ int read_from_cluster_at_offset(cluster_t clus, off_t offset, char* data, size_t
      *       3. 将扇区正确位置的内容移动至 data 中正确位置
      *       你只需要补全以下 TODO 部分。主要是计算扇区号和扇区内偏移量；以及使用 memcpy 将数据移动到 data 中。
      */
-    uint32_t sec = _placeholder_();   // TODO: 请填写正确的扇区号。
-    size_t sec_off = _placeholder_(); // TODO: 请填写正确的扇区内偏移量。
+    uint32_t sec = cluster_first_sector(clus) + offset;   // TODO: 请填写正确的扇区号。
+    size_t sec_off = offset % meta.sector_size; // TODO: 请填写正确的扇区内偏移量。
     size_t pos = 0; // 实际已经读取的字节数
     while(pos < size) { // 还没有读取完毕
         int ret = sector_read(sec, sector_buffer);
@@ -455,9 +464,9 @@ int read_from_cluster_at_offset(cluster_t clus, off_t offset, char* data, size_t
         }
         // Hint: 使用 memcpy 挪数据，从 sec_off 开始挪。挪到 data 中哪个位置？挪多少？挪完后记得更新 pos （约3行代码）
         // ================== Your code here =================
-        
-        
-        
+        size_t to_read = min(size - pos, meta.sector_size - sec_off); // 计算本次需要读取的字节数
+        memcpy(data + pos, sector_buffer + sec_off, to_read);         // 将扇区中的内容移动到缓冲区中的正确位置
+        pos += to_read;
         // ===================================================
         sec_off = 0;
         sec ++ ;
@@ -529,9 +538,16 @@ int fat16_read(const char *path, char *buffer, size_t size, off_t offset,
      *          clus 则需要读取 FAT 表，别忘了你已经实现了 read_fat_entry 函数。
      */
     // ================== Your code here =================
-    
-    
-    
+    while(p < size && is_cluster_inuse(clus)) { // 写一个 while 循环，确认还有数据要读取，且簇号 clus 有效。
+        size_t to_read = min(size - p, meta.cluster_size - offset); // 计算要读取的（从offset开始的）数据长度。
+        int ret = read_from_cluster_at_offset(clus, offset, buffer + p, to_read); // 使用 read_from_cluster_at_offset 函数读取数据。
+        if(ret < 0) {
+            return ret;
+        }
+        p += ret;
+        offset = 0;
+        clus = read_fat_entry(clus); // 更新 clus（下一个簇号）。
+    }
     // ===================================================
     return p;
 }
@@ -546,12 +562,12 @@ int dir_entry_write(DirEntrySlot slot) {
      */
 
     char sector_buffer[MAX_LOGICAL_SECTOR_SIZE];
-    int ret = _placeholder_(); // TODO: 使用 sector_read 读取扇区
+    int ret = sector_read(slot.sector, sector_buffer); // TODO: 使用 sector_read 读取扇区
     if(ret < 0) {
         return ret;
     }
-    _placeholder_(); // TODO: 使用 memcpy 将 slot.dir 里的目录项写入 buffer 中的正确位置
-    ret = _placeholder_(); // TODO: 使用 sector_write 写回扇区
+    memcpy(sector_buffer + slot.offset, &(slot.dir), sizeof(DIR_ENTRY)); // TODO: 使用 memcpy 将 slot.dir 里的目录项写入 buffer 中的正确位置
+    ret = sector_write(slot.sector, sector_buffer); // TODO: 使用 sector_write 写回扇区
     if(ret < 0) {
         return ret;
     }
@@ -571,9 +587,11 @@ int dir_entry_create(DirEntrySlot slot, const char *shortname,
      */
 
     // ================== Your code here =================
-    
-    
-    
+    memcpy(dir->DIR_Name, shortname, FAT_NAME_LEN); // 使用 memcpy 函数来设置 DIR_Name。
+    dir->DIR_Attr = attr; // 设置 DIR_Attr。
+    dir->DIR_FstClusHI = 0; // 设置 DIR_FstClusHI。 （永远为0）
+    dir->DIR_FstClusLO = first_clus; // 设置 DIR_FstClusLO。
+    dir->DIR_FileSize = file_size; // 设置 DIR_FileSize。
     // ===================================================
     
     // 设置文件时间戳，无需修改
@@ -644,9 +662,16 @@ int write_fat_entry(cluster_t clus, cluster_t data) {
          *         3. 将该扇区写回
          */
         // ================== Your code here =================
-        
-        
-        
+/*
+        sector_t sec = meta.fat_sec + i * meta.sec_per_fat + clus_sec; // 计算第 i 个 FAT 表所在扇区，进一步计算clus应的FAT表项所在扇区
+        int ret = sector_read(sec, sector_buffer);
+        if(ret < 0) {
+            return ret;
+        }
+        *(cluster_t*)(sector_buffer + sec_off) = data; // 在对应位置修改数据
+        ret = sector_write(sec, sector_buffer); // 将该扇区写回
+
+*/ 
         // ===================================================
     }
     return 0;
@@ -695,9 +720,19 @@ int alloc_one_cluster(cluster_t* clus) {
      */
 
     // ================== Your code here =================
-    
-    
-    
+/*
+    for(cluster_t i = CLUSTER_MIN; i <= CLUSTER_MAX; i++) { // 扫描FAT表，找到1个空闲的簇。
+        cluster_t entry = read_fat_entry(i);
+        if(entry == CLUSTER_FREE) {
+            *clus = i;
+            write_fat_entry(i, CLUSTER_END); // 修改空簇对应的FAT表项，将其指向 CLUSTER_END。
+            cluster_clear(i); // 同时清零该簇（使用 cluster_clear 函数）。
+            return 0;
+        }
+    }
+    return -ENOSPC; // 找不到空簇，分配失败，返回 -ENOSPC。
+
+*/
     // ===================================================
     return -ENOTSUP;    // TODO 请删除这一行或者修改为正确的返回值
 }
@@ -729,9 +764,26 @@ int alloc_clusters(size_t n, cluster_t* first_clus) {
 
 
     // ================== Your code here =================
-    
-    
-    
+/*
+    for(cluster_t i = CLUSTER_MIN; i <= CLUSTER_MAX; i++) { // 扫描FAT表，找到n个空闲的簇，存入cluster数组。
+        cluster_t entry = read_fat_entry(i);
+        if(entry == CLUSTER_FREE) {
+            clusters[allocated++] = i;
+            if(allocated == n) {
+                break;
+            }
+        }
+    }
+    if(allocated < n) { // 找不到n个簇，分配失败，记得 free(clusters)，返回 -ENOSPC。
+        free(clusters);
+        return -ENOSPC;
+    }
+    for(size_t i = 0; i < n; i++) { // 修改clusters中存储的N个簇对应的FAT表项，将每个簇与下一个簇连接在一起。同时清零每一个新分配的簇。
+        write_fat_entry(clusters[i], clusters[i + 1]);
+        cluster_clear(clusters[i]);
+    }
+    *first_clus = clusters[0]; // 将 first_clus 设置为第一个簇的簇号，释放 clusters。
+*/
     // ===================================================
 
     free(clusters);
@@ -760,9 +812,16 @@ int fat16_mkdir(const char *path, mode_t mode) {
      */
 
     // ================== Your code here =================
-    
-    
-    
+/*
+    ret = alloc_one_cluster(&dir_clus); // 调用 alloc_one_cluster(&dir_clus); 函数来分配簇。
+    if(ret < 0) {
+        return ret;
+    }
+    ret = dir_entry_create(slot, filename, ATTR_DIRECTORY, dir_clus, 0); // 创建目录项
+    if(ret < 0) {
+        return ret;
+    }
+*/
     // ===================================================
 
     // 设置 . 和 .. 目录项
@@ -801,9 +860,18 @@ int fat16_unlink(const char *path) {
      *       记得检查调用函数后的返回值。
      */
     // ================== Your code here =================
-    
-    
-    
+/*
+    int ret = find_entry(path, &slot);  // 找到目录项
+    if(ret < 0) {
+        return ret;
+    }
+    if(attr_is_directory(dir->DIR_Attr)) { // 确认目录项是个文件
+        return -EISDIR;
+    }
+    free_clusters(dir->DIR_FstClusLO); // 释放占用的簇
+    dir->DIR_Name[0] = NAME_DELETED; // 修改目录项为删除
+    ret = dir_entry_write(slot); // 写回目录项
+*/
     // ===================================================
     return -ENOTSUP; // TODO: 请修改返回值
 }
@@ -828,9 +896,33 @@ int fat16_rmdir(const char *path) {
      */
 
     // ================== Your code here =================
-    
-    
-    
+/*
+    int ret = find_entry(path, &slot);  // TODO: 找到目录项
+    if(ret < 0) {
+        return ret;
+    }
+    if(!attr_is_directory(dir->DIR_Attr)) { // TODO: 确认目录项是个目录
+        return -ENOTDIR;
+    }
+    // TODO: 检查目录是否为空
+    cluster_t clus = dir->DIR_FstClusLO;
+    while(is_cluster_inuse(clus)) {
+        sector_t sec = cluster_first_sector(clus);
+        for(size_t off = 0; off < meta.cluster_size; off += DIR_ENTRY_SIZE) {
+            DIR_ENTRY* entry = (DIR_ENTRY*)(sector_buffer + off);
+            if(de_is_valid(entry)) {
+                return -ENOTEMPTY;
+            }
+            if(de_is_free(entry)) {
+                break;
+            }
+        }
+        clus = read_fat_entry(clus);
+    }
+    free_clusters(dir->DIR_FstClusLO); // TODO: 释放占用的簇
+    dir->DIR_Name[0] = NAME_DELETED; // TODO: 修改目录项为删除
+    ret = dir_entry_write(slot); // TODO: 写回目录项
+*/
     // ===================================================
     return -ENOTSUP; // TODO: 请修改返回值
 }
@@ -882,9 +974,27 @@ ssize_t write_to_cluster_at_offset(cluster_t clus, off_t offset, const char* dat
      */
 
     // ================== Your code here =================
-    
-    
-    
+/*
+    uint32_t sec = cluster_first_sector(clus) + offset / meta.sector_size; // TODO: 请填写正确的扇区号。
+    size_t sec_off = offset % meta.sector_size; // TODO: 请填写正确的扇区内偏移量。
+    size_t pos = 0; // 实际已经写入的字节数
+    while(pos < size) { // 还没有写入完毕
+        int ret = sector_read(sec, sector_buffer);
+        if(ret < 0) {
+            return ret;
+        }
+        size_t to_write = min(size - pos, meta.sector_size - sec_off); // 计算本次需要写入的字节数
+        memcpy(sector_buffer + sec_off, data + pos, to_write); // 将数据写入扇区中的正确位置
+        ret = sector_write(sec, sector_buffer); // 将扇区写回
+        if(ret < 0) {
+            return ret;
+        }
+        pos += to_write;
+        sec_off = 0;
+        sec++;
+    }
+    return pos;
+*/
     // ===================================================
     return -ENOTSUP; // TODO: 请修改返回值
 }
@@ -929,9 +1039,43 @@ int fat16_write(const char *path, const char *data, size_t size, off_t offset,
      * 
      */
     // ================== Your code here =================
-    
-    
-    
+/*
+    cluster_t clus = dir->DIR_FstClusLO; // 获取文件的首簇号
+    while(offset >= meta.cluster_size) { // 移动到正确的簇号
+        cluster_t next_clus = read_fat_entry(clus);
+        if(!is_cluster_inuse(next_clus)) {
+            alloc_clusters(1, &next_clus); // 分配新的簇
+            write_fat_entry(clus, next_clus); // 将新的簇连接到文件的簇链上
+        }
+        offset -= meta.cluster_size;
+        clus = next_clus;
+    }
+    size_t p = 0; // 实际已经写入的字节数
+    while(p < size) { // 还没有写入完毕
+        size_t to_write = min(size - p, meta.cluster_size - offset); // 计算本次需要写入的字节数
+        int ret = write_to_cluster_at_offset(clus, offset, data + p, to_write); // 将数据写入簇中的正确位置
+        if(ret < 0) {
+            return ret;
+        }
+        p += ret;
+        offset = 0;
+        clus = read_fat_entry(clus); // 更新 clus（下一个簇号）。
+    }
+    if(p < size) { // 如果还有数据没有写入，说明需要分配新的簇
+        cluster_t new_clus;
+        alloc_clusters(1, &new_clus); // 分配新的簇
+        write_fat_entry(clus, new_clus); // 将新的簇连接到文件的簇链上
+        clus = new_clus;
+        int ret = write_to_cluster_at_offset(clus, 0, data + p, size - p); // 将剩余的数据写入新的簇
+        if(ret < 0) {
+            return ret;
+        }
+        p += ret;
+    }
+    dir->DIR_FileSize = max(dir->DIR_FileSize, offset + size); // 更新文件大小
+    dir_entry_write(slot); // 将更新后的目录项写回
+    return p;
+*/
     // ===================================================
     return -ENOTSUP; // TODO: 请修改返回值
 }
