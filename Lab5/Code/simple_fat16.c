@@ -776,6 +776,7 @@ int alloc_one_cluster(cluster_t* clus) {
     // ================== Your code here =================
     /* 扫描FAT表找一个空闲簇，从MIN扫到MAX*/
     cluster_t ClusN = CLUSTER_MIN;
+    /* 感觉这样会比调用is_cluster_inuse节约一点资源？ */
     while(ClusN <= CLUSTER_MAX) {
         /* 找到空闲簇 */
         if (read_fat_entry(ClusN) == CLUSTER_FREE) {
@@ -1162,6 +1163,7 @@ int fat16_write(const char *path, const char *data, size_t size, off_t offset,
         }
         /* 连接 */
         if (lst_clus == CLUSTER_END) {
+            /* 空文件 */
             dir->DIR_FstClusLO = clus;
         }
         else {
@@ -1170,21 +1172,28 @@ int fat16_write(const char *path, const char *data, size_t size, off_t offset,
     }
 
     /* 分配检查完毕，写入对应偏移处 */
-    sector_t sec_start = offset / (meta.sector_size * meta.sec_per_clus);
-    clus = dir->DIR_FstClusLO;
+    /* 找到写入位置的起始簇 */
+    sector_t clus_start = offset / (meta.sector_size * meta.sec_per_clus);
     
-    for (size_t i = 0; i < sec_start; i++) {
+    /* 让clus从文件簇头开始移动到起始簇的位置 */
+    clus = dir->DIR_FstClusLO;
+    for (size_t i = 0; i < clus_start; i++) {
         if (!is_cluster_inuse(clus)){
             return 0;
         }
         clus = read_fat_entry(clus);
     }
+    /* 当前已写入字节数 */
     size_t cur_off = 0;
+    /* 簇内偏移 */
     size_t clus_off = offset % (meta.sector_size * meta.sec_per_clus);
 
     while (cur_off < size) {
+        /* 当前写入长度 */
         size_t write_len = min(size - cur_off, meta.sector_size * meta.sec_per_clus - clus_off);
+        /* 写入簇偏移位置 */
         write_to_cluster_at_offset(clus, clus_off, data + cur_off, write_len);
+        /* 进入下一个簇 */
         clus = read_fat_entry(clus);
         clus_off = 0;
         cur_off += write_len;
