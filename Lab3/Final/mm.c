@@ -20,38 +20,38 @@
 
 
 /*explicit free list start*/
-#define WSIZE 8
-#define DSIZE 16
-#define CHUNKSIZE (1 << 12)
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define WSIZE 8                             /* 字长         */
+#define DSIZE 16                            /* 双字长       */
+#define CHUNKSIZE (1 << 12)                 /* 最小块大小   */
+#define MAX(x, y) ((x) > (y) ? (x) : (y))   /* 取两者较大值 */
 
-#define PACK(size, prev_alloc, alloc) (((size) & ~(1<<1)) | ((prev_alloc << 1) & ~1) | (alloc))
-#define PACK_PREV_ALLOC(val, prev_alloc) ((val & ~(1<<1)) | (prev_alloc << 1))
-#define PACK_ALLOC(val, alloc) ((val) | (alloc))
+#define PACK(size, prev_alloc, alloc) (((size) & ~(1<<1)) | ((prev_alloc << 1) & ~1) | (alloc)) /* 将三个输入数据打包                             */
+#define PACK_PREV_ALLOC(val, prev_alloc) ((val & ~(1<<1)) | (prev_alloc << 1))                  /* 不改变其它值的情况下，修改当前块的前一位分配标记 */
+#define PACK_ALLOC(val, alloc) ((val) | (alloc))                                                /* 不改变其它值的情况下，修改当前块的分配标记       */
 
-#define GET(p) (*(unsigned long *)(p))
-#define PUT(p, val) (*(unsigned long *)(p) = (val))
+#define GET(p) (*(unsigned long *)(p))                  /* 获取指针位置的值     */
+#define PUT(p, val) (*(unsigned long *)(p) = (val))     /* 向指针位置放入一个值 */
 
-#define GET_SIZE(p) (GET(p) & ~0x7)
-#define GET_ALLOC(p) (GET(p) & 0x1)
-#define GET_PREV_ALLOC(p) ((GET(p) & 0x2) >> 1)
+#define GET_SIZE(p) (GET(p) & ~0x7)                     /* 获取当前块的大小（通过位运算拿到头部存储的size） */
+#define GET_ALLOC(p) (GET(p) & 0x1)                     /* 获取当前块的分配情况                            */
+#define GET_PREV_ALLOC(p) ((GET(p) & 0x2) >> 1)         /* 获取当前块的前一块分配情况                      */
 
-#define HDRP(bp) ((char *)(bp)-WSIZE)
-#define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE) /*only for free blk*/
-#define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp)-WSIZE)))
-#define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE(((char *)(bp)-DSIZE))) /*only when prev_block is free, which can usd*/
+#define HDRP(bp) ((char *)(bp)-WSIZE)                                   /* 获取当前块的头部指针 */
+#define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE)            /* 获取当前块的尾部指针 only for free blk（只有空闲块才有尾部） */
+#define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp)-WSIZE)))   /* 取后一个物理地址上相邻的块 */
+#define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE(((char *)(bp)-DSIZE)))     /* 取前一个物理地址上相邻的块 only when prev_block is free, which can usd */
 
-#define GET_PRED(bp) (GET(bp))  // 结构 ： 块头 | 上一空闲地址 | 下一空闲地址 | 内容 | 块尾
-#define SET_PRED(bp, val) (PUT(bp, val))
+#define GET_PRED(bp) (GET(bp))                                          /* 结构 ： 块头 | 上一空闲地址 | 下一空闲地址 | 内容 | 块尾 */
+#define SET_PRED(bp, val) (PUT(bp, val))                                /* 设置前一空闲块（通过空闲链表） */
 
-#define GET_SUCC(bp) (GET(bp + WSIZE))
+#define GET_SUCC(bp) (GET(bp + WSIZE))                                  /* 获取后一空闲块 */
 #define SET_SUCC(bp, val) (PUT(bp + WSIZE, val))
 
-#define MIN_BLK_SIZE (2 * DSIZE)
+#define MIN_BLK_SIZE (2 * DSIZE)     /* 最小块大小 */
 /*explicit free list end*/
 
 /* single word (4) or double word (8) alignment */
-#define ALIGNMENT DSIZE
+#define ALIGNMENT DSIZE              /* 对齐 */
 
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~0x7)
